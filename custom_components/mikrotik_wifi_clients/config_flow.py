@@ -40,10 +40,14 @@ def _normalize_base_url(host: str, use_ssl: bool) -> str:
 
 async def validate_input(hass: HomeAssistant, data: dict) -> dict:
     use_ssl = bool(data.get(CONF_USE_SSL, True))
+    parsed = urlparse(data[CONF_HOST].strip(), scheme="https" if use_ssl else "http")
+    host = parsed.hostname or parsed.netloc or data[CONF_HOST].strip()
+    port = parsed.port
     base_url = _normalize_base_url(data[CONF_HOST], use_ssl)
     client = MikroTikRestClient(
         hass,
-        base_url,
+        host,
+        port,
         data[CONF_USERNAME],
         data[CONF_PASSWORD],
         use_ssl,
