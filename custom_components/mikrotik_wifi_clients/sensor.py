@@ -85,7 +85,7 @@ class MikroTikClientSensor(CoordinatorEntity, SensorEntity):
         if client is None:
             return None
 
-        return getattr(client, self.entity_description.key)
+        return getattr(client, self.entity_description.key, None)
 
     @property
     def device_info(self) -> DeviceInfo:

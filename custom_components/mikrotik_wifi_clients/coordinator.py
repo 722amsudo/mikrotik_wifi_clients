@@ -38,8 +38,8 @@ class MikroTikClient:
     signal: int | None = None
     tx_rate: float | None = None
     rx_rate: float | None = None
-    tx_throughput: int | None = None
-    rx_throughput: int | None = None
+    tx_throughput: float | None = None
+    rx_throughput: float | None = None
     tx_bytes: int | None = None
     rx_bytes: int | None = None
     tx_packets: int | None = None
@@ -80,9 +80,15 @@ def _parse_float(value: Any) -> float | None:
     if value is None:
         return None
 
+    text = str(value).strip()
+
+    match = re.search(r"[\d.]+", text)
+    if not match:
+        return None
+
     try:
-        return float(str(value).strip())
-    except (TypeError, ValueError):
+        return float(match.group())
+    except ValueError:
         return None
 
 
@@ -142,22 +148,54 @@ def _parse_client(row: dict[str, Any]) -> MikroTikClient | None:
     if mac is None:
         return None
 
+    bytes_value = _get_field(row, "bytes")
+    tx_bytes = _parse_int(_get_field(row, "tx-byte", "tx_bytes"))
+    rx_bytes = _parse_int(_get_field(row, "rx-byte", "rx_bytes"))
+
+    if bytes_value and (tx_bytes is None or rx_bytes is None):
+        try:
+            tx_bytes, rx_bytes = [int(x) for x in str(bytes_value).split(",", 1)]
+        except (ValueError, TypeError):
+            pass
+
+    packets_value = _get_field(row, "packets")
+    tx_packets = _parse_int(_get_field(row, "tx-packet", "tx_packets"))
+    rx_packets = _parse_int(_get_field(row, "rx-packet", "rx_packets"))
+
+    if packets_value and (tx_packets is None or rx_packets is None):
+        try:
+            tx_packets, rx_packets = [int(x) for x in str(packets_value).split(",", 1)]
+        except (ValueError, TypeError):
+            pass
+    
+    
+    tx_rate = _parse_float(_get_field(row, "tx-rate"))
+    rx_rate = _parse_float(_get_field(row, "rx-rate"))
+    tx_bps = _parse_float(_get_field(row, "tx-bits-per-second"))
+    rx_bps = _parse_float(_get_field(row, "rx-bits-per-second"))
+    
     return MikroTikClient(
         mac=mac,
         hostname=_get_field(row, "host-name", "host_name", "hostname", "station-name", "name"),
         ssid=_get_field(row, "ssid"),
         interface=_get_field(row, "interface"),
         band=_get_field(row, "band"),
-        auth_type=_get_field(row, "auth", "authentication"),
+        auth_type=_get_field(
+            row,
+            "auth-type",
+            "auth_type",
+            "auth",
+            "authentication",
+        ),        
         signal=_parse_int(_get_field(row, "signal-strength", "signal")),
-        tx_rate=_parse_float(_get_field(row, "tx-rate", "tx_rate")),
-        rx_rate=_parse_float(_get_field(row, "rx-rate", "rx_rate")),
-        tx_throughput=_parse_int(_get_field(row, "tx-byte-rate", "tx_byte_rate", "tx-throughput")),
-        rx_throughput=_parse_int(_get_field(row, "rx-byte-rate", "rx_byte_rate", "rx-throughput")),
-        tx_bytes=_parse_int(_get_field(row, "tx-byte", "tx_byte")),
-        rx_bytes=_parse_int(_get_field(row, "rx-byte", "rx_byte")),
-        tx_packets=_parse_int(_get_field(row, "tx-packet", "tx_packet")),
-        rx_packets=_parse_int(_get_field(row, "rx-packet", "rx_packet")),
+        tx_rate=tx_rate / 1_000_000 if tx_rate is not None else None,
+        rx_rate=rx_rate / 1_000_000 if rx_rate is not None else None,
+        tx_throughput=tx_bps / 1_000_000 if tx_bps is not None else None,
+        rx_throughput=rx_bps / 1_000_000 if rx_bps is not None else None,
+        tx_bytes=tx_bytes,
+        rx_bytes=rx_bytes,
+        tx_packets=tx_packets,
+        rx_packets=rx_packets,
         uptime=_parse_duration(_get_field(row, "uptime")),
         last_activity=_get_field(row, "last-activity", "last_activity"),
         manufacturer=_get_field(row, "manufacturer", "vendor"),
