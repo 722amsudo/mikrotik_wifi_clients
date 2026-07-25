@@ -15,6 +15,7 @@ LOGGER_NAME = "mikrotik_wifi_clients"
 PLATFORMS = ["sensor", "binary_sensor"]
 
 CONF_BASE_URL = "base_url"
+CONF_USE_SSL = "use_ssl"
 DEFAULT_SCAN_INTERVAL = 10
 REST_ENDPOINT_REGISTRATION_TABLE = "/rest/interface/wifi/registration-table"
 
@@ -116,4 +117,5 @@ BINARY_SENSOR_DESCRIPTIONS = (
 
 DEFAULT_ENTRY_DATA = {
     CONF_VERIFY_SSL: True,
+    CONF_USE_SSL: True,
 }

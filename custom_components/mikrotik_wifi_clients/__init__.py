@@ -8,7 +8,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.device_registry import async_get as async_get_device_registry
 
 from .coordinator import MikroTikCoordinator
-from .const import CONF_BASE_URL, CONF_PASSWORD, CONF_USERNAME, CONF_VERIFY_SSL, DOMAIN, LOGGER_NAME, PLATFORMS
+from .const import CONF_BASE_URL, CONF_PASSWORD, CONF_USE_SSL, CONF_USERNAME, CONF_VERIFY_SSL, DOMAIN, LOGGER_NAME, PLATFORMS
 
 _LOGGER = logging.getLogger(LOGGER_NAME)
 
@@ -19,6 +19,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry.data[CONF_BASE_URL],
         entry.data[CONF_USERNAME],
         entry.data[CONF_PASSWORD],
+        bool(entry.data.get(CONF_USE_SSL, True)),
         bool(entry.data[CONF_VERIFY_SSL]),
     )
 

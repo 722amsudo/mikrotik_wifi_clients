@@ -13,6 +13,7 @@ from .api import MikroTikConnectionError, MikroTikResponseError, MikroTikRestCli
 from .const import (
     CONF_BASE_URL,
     CONF_PASSWORD,
+    CONF_USE_SSL,
     CONF_USERNAME,
     CONF_VERIFY_SSL,
     DEFAULT_SCAN_INTERVAL,
@@ -170,6 +171,7 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
         base_url: str,
         username: str,
         password: str,
+        use_ssl: bool,
         verify_ssl: bool,
     ) -> None:
         super().__init__(
@@ -180,7 +182,7 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
         )
 
         self.base_url = base_url
-        self._client = MikroTikRestClient(hass, base_url, username, password, verify_ssl)
+        self._client = MikroTikRestClient(hass, base_url, username, password, use_ssl, verify_ssl)
 
     async def _async_update_data(self) -> dict[str, MikroTikClient]:
         try:

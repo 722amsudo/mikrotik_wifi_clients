@@ -33,11 +33,14 @@ class MikroTikRestClient:
         base_url: str,
         username: str,
         password: str,
+        use_ssl: bool,
         verify_ssl: bool,
     ) -> None:
-        self._session = async_create_clientsession(hass, verify_ssl=verify_ssl)
+        self._session = async_create_clientsession(hass)
         self._auth = BasicAuth(username, password)
         self._base_url = base_url.rstrip("/")
+        self._use_ssl = use_ssl
+        self._verify_ssl = verify_ssl
 
     def _build_url(self) -> str:
         return f"{self._base_url}{REST_ENDPOINT_REGISTRATION_TABLE}"
@@ -47,7 +50,11 @@ class MikroTikRestClient:
 
         try:
             async with async_timeout.timeout(30):
-                response = await self._session.get(url, auth=self._auth)
+                response = await self._session.get(
+                    url,
+                    auth=self._auth,
+                    ssl=self._verify_ssl,
+                )
                 if response.status == 401:
                     raise MikroTikAuthError("Invalid authentication")
                 if response.status >= 400:

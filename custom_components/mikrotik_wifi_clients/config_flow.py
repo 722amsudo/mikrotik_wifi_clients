@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 
 from .api import MikroTikAuthError, MikroTikConnectionError, MikroTikRestClient
-from .const import CONF_BASE_URL, DEFAULT_ENTRY_DATA, DOMAIN
+from .const import CONF_BASE_URL, CONF_USE_SSL, DEFAULT_ENTRY_DATA, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,30 +20,34 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_HOST): str,
         vol.Required(CONF_USERNAME): str,
         vol.Required(CONF_PASSWORD): str,
+        vol.Required(CONF_USE_SSL, default=True): bool,
         vol.Optional(CONF_VERIFY_SSL, default=True): bool,
     }
 )
 
 
-def _normalize_base_url(host: str) -> str:
-    parsed = urlparse(host.strip(), scheme="https")
+def _normalize_base_url(host: str, use_ssl: bool) -> str:
+    parsed = urlparse(host.strip(), scheme="https" if use_ssl else "http")
     if not parsed.netloc:
         parsed = parsed._replace(netloc=parsed.path, path="")
 
-    if parsed.scheme != "https":
-        raise ValueError("Only HTTPS is supported for RouterOS REST API")
+    scheme = "https" if use_ssl else "http"
+    if parsed.scheme not in {scheme}:
+        parsed = parsed._replace(scheme=scheme)
 
     return urlunparse(parsed._replace(path="", params="", query="", fragment=""))
 
 
 async def validate_input(hass: HomeAssistant, data: dict) -> dict:
-    base_url = _normalize_base_url(data[CONF_HOST])
+    use_ssl = bool(data.get(CONF_USE_SSL, True))
+    base_url = _normalize_base_url(data[CONF_HOST], use_ssl)
     client = MikroTikRestClient(
         hass,
         base_url,
         data[CONF_USERNAME],
         data[CONF_PASSWORD],
-        bool(data[CONF_VERIFY_SSL]),
+        use_ssl,
+        bool(data.get(CONF_VERIFY_SSL, True)),
     )
 
     try:
@@ -77,6 +81,7 @@ class MikroTikConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_USERNAME: user_input[CONF_USERNAME],
                     CONF_PASSWORD: user_input[CONF_PASSWORD],
                     CONF_VERIFY_SSL: user_input[CONF_VERIFY_SSL],
+                    CONF_USE_SSL: user_input[CONF_USE_SSL],
                     **DEFAULT_ENTRY_DATA,
                 }
                 return self.async_create_entry(
