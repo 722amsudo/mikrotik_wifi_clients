@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import ssl
 from typing import Any
 
 import async_timeout
@@ -30,7 +31,8 @@ class MikroTikRestClient:
     def __init__(
         self,
         hass: HomeAssistant,
-        base_url: str,
+        host: str,
+        port: int | None,
         username: str,
         password: str,
         use_ssl: bool,
@@ -38,30 +40,42 @@ class MikroTikRestClient:
     ) -> None:
         self._session = async_create_clientsession(hass)
         self._auth = BasicAuth(username, password)
-        self._base_url = base_url.rstrip("/")
+        self._host = host.rstrip("/")
+        self._port = port
         self._use_ssl = use_ssl
         self._verify_ssl = verify_ssl
 
     def _build_url(self) -> str:
-        return f"{self._base_url}{REST_ENDPOINT_REGISTRATION_TABLE}"
+        scheme = "https" if self._use_ssl else "http"
+        netloc = self._host
+        if self._port is not None:
+            netloc = f"{netloc}:{self._port}"
+        return f"{scheme}://{netloc}{REST_ENDPOINT_REGISTRATION_TABLE}"
+
+    def _ssl_context(self) -> ssl.SSLContext | bool:
+        if self._verify_ssl:
+            return ssl.create_default_context()
+        return False
 
     async def async_get_registration_table(self) -> list[dict[str, Any]]:
         url = self._build_url()
 
+        ssl_context = self._ssl_context()
+
         try:
             async with async_timeout.timeout(30):
-                response = await self._session.get(
+                async with self._session.get(
                     url,
                     auth=self._auth,
-                    ssl=self._verify_ssl,
-                )
-                if response.status == 401:
-                    raise MikroTikAuthError("Invalid authentication")
-                if response.status >= 400:
-                    raise MikroTikConnectionError(
-                        f"Unexpected HTTP status code: {response.status}"
-                    )
-                data = await response.json()
+                    ssl=ssl_context,
+                ) as response:
+                    if response.status == 401:
+                        raise MikroTikAuthError("Invalid authentication")
+                    if response.status >= 400:
+                        raise MikroTikConnectionError(
+                            f"Unexpected HTTP status code: {response.status}"
+                        )
+                    data = await response.json()
         except ClientError as err:
             raise MikroTikConnectionError(str(err)) from err
         except async_timeout.TimeoutError as err:
