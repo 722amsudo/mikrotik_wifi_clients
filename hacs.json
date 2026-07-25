@@ -1,9 +1,4 @@
 {
   "name": "MikroTik WiFi Clients",
-  "content_in_root": false,
-  "domains": ["integration"],
-  "filename": "custom_components",
-  "country": "en",
-  "zip_release": false,
-  "hide_default_branch": false
+  "render_readme": true
 }
