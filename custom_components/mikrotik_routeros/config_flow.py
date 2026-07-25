@@ -10,8 +10,14 @@ from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, CONF_VE
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 
-from custom_components.mikrotik_wifi_clients.api import MikroTikAuthError, MikroTikConnectionError, MikroTikRestClient
-from custom_components.mikrotik_wifi_clients.const import CONF_BASE_URL, DEFAULT_ENTRY_DATA
+from .compat import load_main_module
+
+main_module = load_main_module()
+MikroTikAuthError = main_module.MikroTikAuthError
+MikroTikConnectionError = main_module.MikroTikConnectionError
+MikroTikRestClient = main_module.MikroTikRestClient
+CONF_BASE_URL = main_module.CONF_BASE_URL
+DEFAULT_ENTRY_DATA = main_module.DEFAULT_ENTRY_DATA
 
 _LOGGER = logging.getLogger(__name__)
 
