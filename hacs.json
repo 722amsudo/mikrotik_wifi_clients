@@ -4,5 +4,6 @@
   "domains": ["integration"],
   "filename": "custom_components",
   "country": "en",
-  "zip_release": false
+  "zip_release": false,
+  "hide_default_branch": false
 }
