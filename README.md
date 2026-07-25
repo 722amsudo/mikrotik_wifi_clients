@@ -38,3 +38,4 @@ This integration uses a UI config flow and does not require YAML.
 - Uses Home Assistant's built-in `aiohttp` client session.
 - Polls the registration table once per update.
 - Supports multiple MikroTik routers via multiple config entries.
+- Includes packaging ignore rules for test and cache artifacts so HACS can download the integration cleanly.
