@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from __future__ import annotations
-
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntityDescription
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntityDescription, SensorStateClass
 from homeassistant.const import (
@@ -10,7 +8,6 @@ from homeassistant.const import (
     CONF_VERIFY_SSL,
     UnitOfDataRate,
     UnitOfInformation,
-    UnitOfPowerDBM,
 )
 
 DOMAIN = "mikrotik_wifi_clients"
@@ -26,7 +23,7 @@ SENSOR_DESCRIPTION_MAP: dict[str, dict[str, object]] = {
         "name": "Signal",
         "icon": "mdi:wifi",
         "device_class": SensorDeviceClass.SIGNAL_STRENGTH,
-        "native_unit_of_measurement": UnitOfPowerDBM,
+        "native_unit_of_measurement": "dBm",
         "state_class": SensorStateClass.MEASUREMENT,
     },
     "tx_rate": {
