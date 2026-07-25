@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 
 from .api import MikroTikAuthError, MikroTikConnectionError, MikroTikRestClient
-from .const import CONF_BASE_URL, CONF_USE_SSL, DEFAULT_ENTRY_DATA, DOMAIN
+from .const import CONF_BASE_URL, CONF_USE_SSL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -84,9 +84,8 @@ class MikroTikConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_BASE_URL: validated[CONF_BASE_URL],
                     CONF_USERNAME: user_input[CONF_USERNAME],
                     CONF_PASSWORD: user_input[CONF_PASSWORD],
-                    CONF_VERIFY_SSL: user_input[CONF_VERIFY_SSL],
-                    CONF_USE_SSL: user_input[CONF_USE_SSL],
-                    **DEFAULT_ENTRY_DATA,
+                    CONF_VERIFY_SSL: user_input.get(CONF_VERIFY_SSL, True),
+                    CONF_USE_SSL: user_input.get(CONF_USE_SSL, True),
                 }
                 return self.async_create_entry(
                     title=validated["title"],
