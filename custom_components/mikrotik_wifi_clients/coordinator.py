@@ -95,6 +95,26 @@ def _parse_duration(value: Any) -> int | None:
     if not text:
         return None
 
+    if text.lower().startswith("0x"):
+        return None
+
+    matches = re.findall(r"(?P<value>\d+)(?P<unit>[smhdw])", text.lower())
+    if matches:
+        seconds = 0
+        for raw_value, unit in matches:
+            number = int(raw_value)
+            if unit == "s":
+                seconds += number
+            elif unit == "m":
+                seconds += number * 60
+            elif unit == "h":
+                seconds += number * 3600
+            elif unit == "d":
+                seconds += number * 86400
+            elif unit == "w":
+                seconds += number * 604800
+        return seconds
+
     parts = text.split(":")
     if len(parts) in (2, 3):
         try:
