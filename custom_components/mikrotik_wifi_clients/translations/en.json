@@ -1,0 +1,21 @@
+{
+  "title": "MikroTik WiFi Clients",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure MikroTik WiFi Clients",
+        "description": "Enter the RouterOS REST API URL and credentials for your MikroTik router.",
+        "data": {
+          "host": "Router address",
+          "username": "Username",
+          "password": "Password",
+          "verify_ssl": "Verify SSL certificate"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to the MikroTik REST API.",
+      "invalid_auth": "Invalid username or password."
+    }
+  }
+}

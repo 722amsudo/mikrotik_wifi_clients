@@ -1,6 +1,6 @@
-# MikroTik RouterOS Home Assistant Integration
+# MikroTik WiFi Clients Home Assistant Integration
 
-A lightweight Home Assistant custom integration for MikroTik RouterOS devices using the RouterOS API.
+A Home Assistant custom integration for MikroTik RouterOS using the RouterOS REST API.
 
 ## Installation
 
@@ -11,23 +11,30 @@ A lightweight Home Assistant custom integration for MikroTik RouterOS devices us
 
 ## Configuration
 
-This integration uses a UI config flow.
+This integration uses a UI config flow and does not require YAML.
 
 1. Go to `Settings` -> `Devices & Services` -> `Add Integration`.
-2. Search for `MikroTik RouterOS`.
-3. Enter your router host, username, and password.
+2. Search for `MikroTik WiFi Clients`.
+3. Enter your router address, username, password, and SSL verification preference.
 
 ## Supported entities
 
-- Router uptime
-- Router software version
-- Board name
-- Router identity
-
-## Requirements
-
-- `librouteros`
+- WiFi client signal
+- TX/RX rate
+- TX/RX throughput
+- TX/RX bytes
+- TX/RX packets
+- SSID
+- Interface
+- Band
+- Auth type
+- Uptime
+- Last activity
+- Connected binary sensor
 
 ## Notes
 
-This integration connects to MikroTik devices via the RouterOS API. Make sure the API service is enabled in your MikroTik router and that the account has permission to read system information.
+- Uses the MikroTik RouterOS REST API exclusively.
+- Uses Home Assistant's built-in `aiohttp` client session.
+- Polls the registration table once per update.
+- Supports multiple MikroTik routers via multiple config entries.
