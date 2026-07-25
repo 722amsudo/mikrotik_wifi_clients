@@ -1,0 +1,8 @@
+{
+  "name": "MikroTik RouterOS",
+  "content_in_root": false,
+  "domains": ["integration"],
+  "filename": "custom_components",
+  "country": "en",
+  "zip_release": false
+}

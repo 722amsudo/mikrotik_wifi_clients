@@ -1,0 +1,11 @@
+{
+  "title": "MikroTik RouterOS",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure MikroTik RouterOS",
+        "description": "Enter the connection details for your MikroTik router."
+      }
+    }
+  }
+}
