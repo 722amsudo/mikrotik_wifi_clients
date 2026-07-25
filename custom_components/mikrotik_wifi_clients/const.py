@@ -6,7 +6,6 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_USERNAME,
     CONF_VERIFY_SSL,
-    DATA_RATE_MEGABITS_PER_SECOND,
     ELECTRIC_POTENTIAL_DBM,
     STORAGE_BYTES,
 )
@@ -32,14 +31,14 @@ SENSOR_DESCRIPTIONS = (
         key="tx_rate",
         name="TX Rate",
         icon="mdi:upload",
-        native_unit_of_measurement=DATA_RATE_MEGABITS_PER_SECOND,
+        native_unit_of_measurement="Mbps",
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
         key="rx_rate",
         name="RX Rate",
         icon="mdi:download",
-        native_unit_of_measurement=DATA_RATE_MEGABITS_PER_SECOND,
+        native_unit_of_measurement="Mbps",
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
