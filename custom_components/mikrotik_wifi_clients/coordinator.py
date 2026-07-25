@@ -5,6 +5,7 @@ import re
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
+from urllib.parse import urlparse
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -182,7 +183,10 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
         )
 
         self.base_url = base_url
-        self._client = MikroTikRestClient(hass, base_url, username, password, use_ssl, verify_ssl)
+        parsed = urlparse(base_url)
+        host = parsed.hostname or parsed.netloc or base_url
+        port = parsed.port
+        self._client = MikroTikRestClient(hass, host, port, username, password, use_ssl, verify_ssl)
 
     async def _async_update_data(self) -> dict[str, MikroTikClient]:
         try:
