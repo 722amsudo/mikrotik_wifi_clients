@@ -68,6 +68,7 @@ class MikroTikClientSensor(CoordinatorEntity, SensorEntity):
         self._mac = mac
         self.entity_description = description
         self._attr_unique_id = f"{entry_id}_{mac}_{description.key}"
+        self._attr_has_entity_name = True
 
     @property
     def _client(self) -> MikroTikClient | None:
