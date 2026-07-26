@@ -30,6 +30,7 @@ _MAC_CLEANER = re.compile(r"[^0-9A-Fa-f]")
 @dataclass
 class MikroTikClient:
     mac: str
+    ip: str | None = None
     hostname: str | None = None
     ssid: str | None = None
     interface: str | None = None
@@ -93,6 +94,18 @@ def _parse_float(value: Any) -> float | None:
     except ValueError:
         return None
 
+
+def _build_arp_map(rows: list[dict[str, Any]]) -> dict[str, str]:
+    arp_map = {}
+
+    for row in rows:
+        mac = _normalize_mac(row.get("mac-address"))
+        ip = row.get("address")
+
+        if mac and ip:
+            arp_map[mac] = ip
+
+    return arp_map
 
 def _parse_duration(value: Any) -> int | None:
     if value is None:
@@ -231,11 +244,18 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
     async def _async_update_data(self) -> dict[str, MikroTikClient]:
         try:
             registration_table = await self._client.async_get_registration_table()
+            arp_table = await self._client.async_get_arp_table()
+
+            arp_map = _build_arp_map(arp_table)
             clients: dict[str, MikroTikClient] = {}
             for client_row in registration_table:
                 client = _parse_client(client_row)
+
                 if client is None:
                     continue
+
+                client.ip = arp_map.get(client.mac)
+
                 clients[client.mac] = client
             return clients
         except (MikroTikConnectionError, MikroTikResponseError) as err:
