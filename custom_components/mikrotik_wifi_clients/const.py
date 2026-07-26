@@ -19,6 +19,7 @@ CONF_USE_SSL = "use_ssl"
 DEFAULT_SCAN_INTERVAL = 10
 REST_ENDPOINT_REGISTRATION_TABLE = "/rest/interface/wifi/registration-table"
 REST_ENDPOINT_ARP = "/rest/ip/arp"
+REST_ENDPOINT_DHCP_LEASE = "/rest/ip/dhcp-server/lease"
 
 SENSOR_DESCRIPTION_MAP: dict[str, dict[str, object]] = {
     "signal": {

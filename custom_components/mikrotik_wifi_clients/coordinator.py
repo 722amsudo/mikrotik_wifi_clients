@@ -107,6 +107,18 @@ def _build_arp_map(rows: list[dict[str, Any]]) -> dict[str, str]:
 
     return arp_map
 
+def _build_hostname_map(rows: list[dict[str, Any]]) -> dict[str, str]:
+    hostname_map = {}
+
+    for row in rows:
+        mac = _normalize_mac(row.get("mac-address"))
+        hostname = row.get("host-name")
+
+        if mac and hostname:
+            hostname_map[mac] = hostname
+
+    return hostname_map
+
 def _parse_duration(value: Any) -> int | None:
     if value is None:
         return None
@@ -245,8 +257,10 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
         try:
             registration_table = await self._client.async_get_registration_table()
             arp_table = await self._client.async_get_arp_table()
+            dhcp_leases = await self._client.async_get_dhcp_leases()
 
             arp_map = _build_arp_map(arp_table)
+            hostname_map = _build_hostname_map(dhcp_leases)
             clients: dict[str, MikroTikClient] = {}
             for client_row in registration_table:
                 client = _parse_client(client_row)
@@ -255,6 +269,7 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
                     continue
 
                 client.ip = arp_map.get(client.mac)
+                client.hostname = hostname_map.get(client.mac)
 
                 clients[client.mac] = client
             return clients
