@@ -50,11 +50,11 @@ class MikroTikClient:
     manufacturer: str | None = None
     raw: dict[str, Any] | None = None
 
-@property
-def name(self) -> str:
-    if self.hostname and self.hostname.lower() != self.mac.lower():
-        return self.hostname
-    return self.mac
+    @property
+    def name(self) -> str:
+        if self.hostname and self.hostname.lower() != self.mac.lower():
+            return self.hostname
+        return self.mac
 
 
 def _normalize_mac(raw_mac: str | None) -> str | None:
