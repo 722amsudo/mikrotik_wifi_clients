@@ -44,12 +44,14 @@ SENSOR_DESCRIPTION_MAP: dict[str, dict[str, object]] = {
         "icon": "mdi:upload-network",
         "native_unit_of_measurement": UnitOfDataRate.MEGABITS_PER_SECOND,
         "state_class": SensorStateClass.MEASUREMENT,
+        "suggested_display_precision": 1,
     },
     "rx_throughput": {
         "name": "RX Throughput",
         "icon": "mdi:download-network",
         "native_unit_of_measurement": UnitOfDataRate.MEGABITS_PER_SECOND,
         "state_class": SensorStateClass.MEASUREMENT,
+        "suggested_display_precision": 1,
     },
     "tx_bytes": {
         "name": "TX Bytes",
