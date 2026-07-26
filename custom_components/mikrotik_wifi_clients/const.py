@@ -16,7 +16,7 @@ PLATFORMS = ["sensor", "binary_sensor"]
 
 CONF_BASE_URL = "base_url"
 CONF_USE_SSL = "use_ssl"
-DEFAULT_SCAN_INTERVAL = 10
+DEFAULT_SCAN_INTERVAL = 5
 REST_ENDPOINT_REGISTRATION_TABLE = "/rest/interface/wifi/registration-table"
 REST_ENDPOINT_ARP = "/rest/ip/arp"
 REST_ENDPOINT_DHCP_LEASE = "/rest/ip/dhcp-server/lease"
