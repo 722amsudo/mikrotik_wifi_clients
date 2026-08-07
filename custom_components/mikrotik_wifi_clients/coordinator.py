@@ -14,6 +14,7 @@ from .api import MikroTikConnectionError, MikroTikResponseError, MikroTikRestCli
 from .const import (
     CONF_BASE_URL,
     CONF_PASSWORD,
+    CONF_SCAN_INTERVAL,
     CONF_USE_SSL,
     CONF_USERNAME,
     CONF_VERIFY_SSL,
@@ -239,12 +240,13 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
         password: str,
         use_ssl: bool,
         verify_ssl: bool,
+        scan_interval: int = DEFAULT_SCAN_INTERVAL,
     ) -> None:
         super().__init__(
             hass,
             _LOGGER,
             name=f"{DOMAIN} {base_url}",
-            update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
+            update_interval=timedelta(seconds=scan_interval),
         )
 
         self.base_url = base_url

@@ -4,6 +4,7 @@ from homeassistant.components.binary_sensor import BinarySensorDeviceClass, Bina
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntityDescription, SensorStateClass
 from homeassistant.const import (
     CONF_PASSWORD,
+    CONF_SCAN_INTERVAL,
     CONF_USERNAME,
     CONF_VERIFY_SSL,
     UnitOfDataRate,
@@ -20,6 +21,7 @@ DEFAULT_SCAN_INTERVAL = 5
 REST_ENDPOINT_REGISTRATION_TABLE = "/rest/interface/wifi/registration-table"
 REST_ENDPOINT_ARP = "/rest/ip/arp"
 REST_ENDPOINT_DHCP_LEASE = "/rest/ip/dhcp-server/lease"
+REST_ENDPOINT_INTERFACES = "/rest/interface"
 
 SENSOR_DESCRIPTION_MAP: dict[str, dict[str, object]] = {
     "signal": {

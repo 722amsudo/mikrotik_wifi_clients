@@ -6,12 +6,12 @@ from urllib.parse import urlparse, urlunparse
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, CONF_VERIFY_SSL
+from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_SCAN_INTERVAL, CONF_USERNAME, CONF_VERIFY_SSL
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 
 from .api import MikroTikAuthError, MikroTikConnectionError, MikroTikRestClient
-from .const import CONF_BASE_URL, CONF_USE_SSL, DOMAIN
+from .const import CONF_BASE_URL, CONF_USE_SSL, DEFAULT_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,6 +22,9 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_PASSWORD): str,
         vol.Required(CONF_USE_SSL, default=True): bool,
         vol.Optional(CONF_VERIFY_SSL, default=True): bool,
+        vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): vol.All(
+            vol.Coerce(int), vol.Range(min=1, max=3600)
+        ),
     }
 )
 
@@ -86,6 +89,7 @@ class MikroTikConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_PASSWORD: user_input[CONF_PASSWORD],
                     CONF_VERIFY_SSL: user_input.get(CONF_VERIFY_SSL, True),
                     CONF_USE_SSL: user_input.get(CONF_USE_SSL, True),
+                    CONF_SCAN_INTERVAL: user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
                 }
                 return self.async_create_entry(
                     title=validated["title"],
@@ -96,4 +100,36 @@ class MikroTikConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=STEP_USER_DATA_SCHEMA,
             errors=errors,
+        )
+
+    @staticmethod
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry):
+        return MikroTikOptionsFlowHandler(config_entry)
+
+
+class MikroTikOptionsFlowHandler(config_entries.OptionsFlow):
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        self.config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict[str, object] | None = None
+    ) -> FlowResult:
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_SCAN_INTERVAL,
+                        default=self.config_entry.options.get(
+                            CONF_SCAN_INTERVAL,
+                            self.config_entry.data.get(
+                                CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+                            ),
+                        ),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=3600)),
+                }
+            ),
         )
