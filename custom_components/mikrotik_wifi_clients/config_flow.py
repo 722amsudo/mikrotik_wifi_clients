@@ -6,6 +6,7 @@ from urllib.parse import urlparse, urlunparse
 import voluptuous as vol
 
 from homeassistant import config_entries
+from homeassistant.config_entries import OptionsFlowWithConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_SCAN_INTERVAL, CONF_USERNAME, CONF_VERIFY_SSL
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
@@ -107,13 +108,7 @@ class MikroTikConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return MikroTikOptionsFlowHandler(config_entry)
 
 
-class MikroTikOptionsFlowHandler(config_entries.OptionsFlow):
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        self._config_entry = config_entry
-
-    @property
-    def config_entry(self) -> config_entries.ConfigEntry:
-        return self._config_entry
+class MikroTikOptionsFlowHandler(OptionsFlowWithConfigEntry):
 
     async def async_step_init(
         self, user_input: dict[str, object] | None = None
@@ -130,7 +125,8 @@ class MikroTikOptionsFlowHandler(config_entries.OptionsFlow):
                         default=self.config_entry.options.get(
                             CONF_SCAN_INTERVAL,
                             self.config_entry.data.get(
-                                CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+                                CONF_SCAN_INTERVAL,
+                                DEFAULT_SCAN_INTERVAL,
                             ),
                         ),
                     ): vol.All(vol.Coerce(int), vol.Range(min=1, max=3600)),
