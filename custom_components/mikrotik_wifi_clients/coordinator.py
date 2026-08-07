@@ -256,6 +256,10 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
         self._client = MikroTikRestClient(hass, host, port, username, password, use_ssl, verify_ssl)
 
     async def _async_update_data(self) -> dict[str, MikroTikClient]:
+        _LOGGER.warning(
+            "Coordinator update. Interval=%s",
+            self.update_interval,
+        )
         try:
             registration_table = await self._client.async_get_registration_table()
             arp_table = await self._client.async_get_arp_table()
