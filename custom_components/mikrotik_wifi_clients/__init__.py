@@ -29,6 +29,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         CONF_SCAN_INTERVAL,
         entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
     )
+    _LOGGER.warning("Using scan interval: %s seconds", scan_interval)
     coordinator = MikroTikCoordinator(
         hass,
         entry.data[CONF_BASE_URL],
@@ -46,6 +47,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady from err
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+
+    entry.async_on_unload(
+        entry.add_update_listener(async_update_options)
+    )
 
     async_get_device_registry(hass).async_get_or_create(
         config_entry_id=entry.entry_id,
@@ -65,3 +70,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
     return unload_ok
+
+async def async_update_options(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+) -> None:
+    """Reload integration when options change."""
+    await hass.config_entries.async_reload(entry.entry_id)
