@@ -248,7 +248,7 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
             name=f"{DOMAIN} {base_url}",
             update_interval=timedelta(seconds=scan_interval),
         )
-        _LOGGER.warning("Created coordinator: interval=%s", self.update_interval)
+        _LOGGER.debug("Created coordinator: interval=%s", self.update_interval)
 
         self.base_url = base_url
         parsed = urlparse(base_url)
