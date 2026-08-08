@@ -29,7 +29,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         CONF_SCAN_INTERVAL,
         entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
     )
-    _LOGGER.warning("Using scan interval: %s seconds", scan_interval)
+    _LOGGER.debug("Using scan interval: %s seconds", scan_interval)
     coordinator = MikroTikCoordinator(
         hass,
         entry.data[CONF_BASE_URL],
