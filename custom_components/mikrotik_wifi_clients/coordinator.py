@@ -255,6 +255,11 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
         host = parsed.hostname or parsed.netloc or base_url
         port = parsed.port
         self._client = MikroTikRestClient(hass, host, port, username, password, use_ssl, verify_ssl)
+        _LOGGER.debug(
+            "Coordinator created: interval=%s, listeners=%s",
+            self.update_interval,
+            len(self._listeners),
+        )
 
     async def _async_update_data(self) -> dict[str, MikroTikClient]:
         _LOGGER.debug(
