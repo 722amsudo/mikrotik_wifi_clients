@@ -8,8 +8,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
 
-from .const import DOMAIN, SENSOR_DESCRIPTIONS
-from .coordinator import MikroTikClient, MikroTikCoordinator
+from .const import DOMAIN, INTERFACE_SENSOR_DESCRIPTIONS, SENSOR_DESCRIPTIONS
+from .coordinator import MikroTikClient, MikroTikCoordinator, MikroTikInterface
 
 
 async def async_setup_entry(
@@ -30,6 +30,15 @@ async def async_setup_entry(
     if entities:
         async_add_entities(entities)
 
+    existing_interfaces = set(coordinator.interfaces)
+    interface_entities = [
+        MikroTikInterfaceSensor(coordinator, entry.entry_id, name, description)
+        for name in sorted(existing_interfaces)
+        for description in INTERFACE_SENSOR_DESCRIPTIONS
+    ]
+    if interface_entities:
+        async_add_entities(interface_entities)
+
     if sorted(known_macs) != entry.data.get("known_clients", []):
         hass.config_entries.async_update_entry(
             entry,
@@ -38,7 +47,8 @@ async def async_setup_entry(
 
     def _add_new_entities() -> None:
         new_macs = set(coordinator.data) - existing_macs
-        if not new_macs:
+        new_interfaces = set(coordinator.interfaces) - existing_interfaces
+        if not new_macs and not new_interfaces:
             return
 
         new_entities: list[MikroTikClientSensor] = []
@@ -47,11 +57,22 @@ async def async_setup_entry(
                 new_entities.append(MikroTikClientSensor(coordinator, entry.entry_id, mac, description))
             existing_macs.add(mac)
 
-        async_add_entities(new_entities)
-        hass.config_entries.async_update_entry(
-            entry,
-            data={**entry.data, "known_clients": sorted(existing_macs | known_macs)},
-        )
+        if new_entities:
+            async_add_entities(new_entities)
+            hass.config_entries.async_update_entry(
+                entry,
+                data={**entry.data, "known_clients": sorted(existing_macs | known_macs)},
+            )
+
+        if new_interfaces:
+            async_add_entities(
+                [
+                    MikroTikInterfaceSensor(coordinator, entry.entry_id, name, description)
+                    for name in sorted(new_interfaces)
+                    for description in INTERFACE_SENSOR_DESCRIPTIONS
+                ]
+            )
+            existing_interfaces.update(new_interfaces)
 
     entry.async_on_unload(coordinator.async_add_listener(_add_new_entities))
 
@@ -97,5 +118,45 @@ class MikroTikClientSensor(CoordinatorEntity, SensorEntity):
             "manufacturer": client.manufacturer if client else None,
             "model": "WiFi Client",
             "connections": {(CONNECTION_NETWORK_MAC, self._mac)},
+            "via_device": (DOMAIN, self.coordinator.base_url),
+        }
+
+
+class MikroTikInterfaceSensor(CoordinatorEntity, SensorEntity):
+    def __init__(
+        self,
+        coordinator: MikroTikCoordinator,
+        entry_id: str,
+        interface_name: str,
+        description: SensorEntityDescription,
+    ) -> None:
+        super().__init__(coordinator)
+        self._interface_name = interface_name
+        self.entity_description = description
+        self._attr_unique_id = f"{entry_id}_interface_{interface_name}_{description.key}"
+        self._attr_has_entity_name = True
+
+    @property
+    def _interface(self) -> MikroTikInterface | None:
+        return self.coordinator.interfaces.get(self._interface_name)
+
+    @property
+    def available(self) -> bool:
+        return bool(self._interface and self.coordinator.last_update_success)
+
+    @property
+    def native_value(self) -> int | float | None:
+        interface = self._interface
+        if interface is None:
+            return None
+        return getattr(interface, self.entity_description.key)
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return {
+            "identifiers": {(DOMAIN, f"{self.coordinator.base_url}_interface_{self._interface_name}")},
+            "name": self._interface_name,
+            "manufacturer": "MikroTik",
+            "model": "Router Interface",
             "via_device": (DOMAIN, self.coordinator.base_url),
         }

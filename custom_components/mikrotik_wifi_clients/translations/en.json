@@ -9,6 +9,8 @@
           "host": "Router address",
           "username": "Username",
           "password": "Password",
+          "use_ssl": "Use SSL",
+          "scan_interval": "Scan interval (seconds)",
           "verify_ssl": "Verify SSL certificate"
         }
       }
@@ -16,6 +18,16 @@
     "error": {
       "cannot_connect": "Unable to connect to the MikroTik REST API.",
       "invalid_auth": "Invalid username or password."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Polling interval",
+        "data": {
+          "scan_interval": "Scan interval (seconds)"
+        }
+      }
     }
   }
 }

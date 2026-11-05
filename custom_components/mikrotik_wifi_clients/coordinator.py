@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
@@ -10,7 +11,12 @@ from urllib.parse import urlparse
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .api import MikroTikConnectionError, MikroTikResponseError, MikroTikRestClient
+from .api import (
+    MikroTikAuthError,
+    MikroTikConnectionError,
+    MikroTikResponseError,
+    MikroTikRestClient,
+)
 from .const import (
     CONF_BASE_URL,
     CONF_PASSWORD,
@@ -26,6 +32,15 @@ from .const import (
 _LOGGER = logging.getLogger(LOGGER_NAME)
 
 _MAC_CLEANER = re.compile(r"[^0-9A-Fa-f]")
+_MONITORED_INTERFACE_DEFAULT_NAMES = {
+    "ether1",
+    "ether2",
+    "ether3",
+    "ether4",
+    "ether5",
+    "wifi1",
+    "wifi2",
+}
 
 
 @dataclass
@@ -57,6 +72,18 @@ class MikroTikClient:
         if self.hostname and self.hostname.lower() != self.mac.lower():
             return self.hostname
         return self.mac
+
+
+@dataclass
+class MikroTikInterface:
+    name: str
+    running: bool
+    rx_bytes: int | None = None
+    tx_bytes: int | None = None
+    rx_packets: int | None = None
+    tx_packets: int | None = None
+    rx_rate: float | None = None
+    tx_rate: float | None = None
 
 
 def _normalize_mac(raw_mac: str | None) -> str | None:
@@ -251,6 +278,8 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
         _LOGGER.debug("Created coordinator: interval=%s", self.update_interval)
 
         self.base_url = base_url
+        self.interfaces: dict[str, MikroTikInterface] = {}
+        self._previous_interface_counters: dict[str, tuple[int, int, float]] = {}
         parsed = urlparse(base_url)
         host = parsed.hostname or parsed.netloc or base_url
         port = parsed.port
@@ -270,9 +299,49 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
             registration_table = await self._client.async_get_registration_table()
             arp_table = await self._client.async_get_arp_table()
             dhcp_leases = await self._client.async_get_dhcp_leases()
+            interface_rows = await self._client.async_get_interfaces()
 
             arp_map = _build_arp_map(arp_table)
             hostname_map = _build_hostname_map(dhcp_leases)
+            now = time.monotonic()
+            interfaces: dict[str, MikroTikInterface] = {}
+            next_counters: dict[str, tuple[int, int, float]] = {}
+            for row in interface_rows:
+                if row.get("default-name") not in _MONITORED_INTERFACE_DEFAULT_NAMES:
+                    continue
+                name = row.get("name")
+                if not isinstance(name, str) or not name:
+                    continue
+                rx_bytes = _parse_int(row.get("rx-byte"))
+                tx_bytes = _parse_int(row.get("tx-byte"))
+                running = str(row.get("running", "false")).lower() == "true"
+                rx_rate = tx_rate = None
+                previous = self._previous_interface_counters.get(name)
+                if (
+                    previous is not None
+                    and rx_bytes is not None
+                    and tx_bytes is not None
+                ):
+                    previous_rx, previous_tx, previous_time = previous
+                    elapsed = now - previous_time
+                    if elapsed > 0 and rx_bytes >= previous_rx and tx_bytes >= previous_tx:
+                        rx_rate = (rx_bytes - previous_rx) * 8 / elapsed / 1_000_000
+                        tx_rate = (tx_bytes - previous_tx) * 8 / elapsed / 1_000_000
+                if rx_bytes is not None and tx_bytes is not None:
+                    next_counters[name] = (rx_bytes, tx_bytes, now)
+                interfaces[name] = MikroTikInterface(
+                    name=name,
+                    running=running,
+                    rx_bytes=rx_bytes,
+                    tx_bytes=tx_bytes,
+                    rx_packets=_parse_int(row.get("rx-packet")),
+                    tx_packets=_parse_int(row.get("tx-packet")),
+                    rx_rate=rx_rate,
+                    tx_rate=tx_rate,
+                )
+            self.interfaces = interfaces
+            self._previous_interface_counters = next_counters
+
             clients: dict[str, MikroTikClient] = {}
             for client_row in registration_table:
                 client = _parse_client(client_row)
@@ -285,5 +354,9 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
 
                 clients[client.mac] = client
             return clients
-        except (MikroTikConnectionError, MikroTikResponseError) as err:
+        except (
+            MikroTikAuthError,
+            MikroTikConnectionError,
+            MikroTikResponseError,
+        ) as err:
             raise UpdateFailed(f"Unable to update MikroTik data: {err}") from err

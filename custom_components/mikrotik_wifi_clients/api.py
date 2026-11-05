@@ -15,6 +15,7 @@ from .const import (
     REST_ENDPOINT_REGISTRATION_TABLE,
     REST_ENDPOINT_ARP,
     REST_ENDPOINT_DHCP_LEASE,
+    REST_ENDPOINT_INTERFACES,
 )
 
 _LOGGER = logging.getLogger(LOGGER_NAME)
@@ -176,5 +177,35 @@ class MikroTikRestClient:
             raise MikroTikResponseError(
                 "Expected a JSON list from DHCP lease table"
             )
+
+        return data
+
+    async def async_get_interfaces(self) -> list[dict[str, Any]]:
+        url = self._build_endpoint_url(REST_ENDPOINT_INTERFACES)
+        ssl_context = self._ssl_context()
+
+        try:
+            async with async_timeout.timeout(30):
+                async with self._session.get(
+                    url,
+                    auth=self._auth,
+                    ssl=ssl_context,
+                ) as response:
+                    if response.status == 401:
+                        raise MikroTikAuthError("Invalid authentication")
+                    if response.status >= 400:
+                        raise MikroTikConnectionError(
+                            f"Unexpected HTTP status code: {response.status}"
+                        )
+                    data = await response.json()
+        except ClientError as err:
+            raise MikroTikConnectionError(str(err)) from err
+        except async_timeout.TimeoutError as err:
+            raise MikroTikConnectionError("Request timed out") from err
+        except ContentTypeError as err:
+            raise MikroTikResponseError("Unable to parse JSON response") from err
+
+        if not isinstance(data, list):
+            raise MikroTikResponseError("Expected a JSON list from interface table")
 
         return data

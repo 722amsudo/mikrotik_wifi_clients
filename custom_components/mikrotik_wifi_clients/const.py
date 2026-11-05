@@ -117,6 +117,51 @@ SENSOR_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = tuple(
     for key, description in SENSOR_DESCRIPTION_MAP.items()
 )
 
+INTERFACE_SENSOR_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
+    SensorEntityDescription(
+        key="rx_bytes",
+        name="RX Bytes",
+        icon="mdi:download",
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+    ),
+    SensorEntityDescription(
+        key="tx_bytes",
+        name="TX Bytes",
+        icon="mdi:upload",
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+    ),
+    SensorEntityDescription(
+        key="rx_packets",
+        name="RX Packets",
+        icon="mdi:download-network",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+    ),
+    SensorEntityDescription(
+        key="tx_packets",
+        name="TX Packets",
+        icon="mdi:upload-network",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+    ),
+    SensorEntityDescription(
+        key="rx_rate",
+        name="RX Rate",
+        icon="mdi:download-network",
+        native_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+    ),
+    SensorEntityDescription(
+        key="tx_rate",
+        name="TX Rate",
+        icon="mdi:upload-network",
+        native_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+    ),
+)
+
 BINARY_SENSOR_DESCRIPTIONS = (
     BinarySensorEntityDescription(
         key="connected",

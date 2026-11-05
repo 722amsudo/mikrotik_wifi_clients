@@ -80,10 +80,15 @@ Each WiFi client is created as a separate Home Assistant device.
 - IP address (from MikroTik ARP table)
 - Hostname (when available)
 
+### Router interfaces
+
+Each interface returned by `/rest/interface` is created as a separate Home Assistant device linked to the router. Interface entities include link status, RX/TX byte and packet counters, and RX/TX rates calculated from counter changes between polls.
+
 ## Features
 
 - Uses MikroTik RouterOS REST API.
 - Reads clients from /rest/interface/wifi/registration-table
+- Reads interface status and counters from /rest/interface
 - Resolves IP addresses using /rest/ip/arp
 - Automatically creates devices for discovered WiFi clients.
 - Keeps known clients when they disconnect.
@@ -98,7 +103,9 @@ Each WiFi client is created as a separate Home Assistant device.
 - WiFi package with registration table support
 - User permissions:
   - /interface/wifi
+  - /interface
   - /ip/arp
+  - /ip/dhcp-server/lease
 
 ## Notes
 
