@@ -2,7 +2,7 @@
 
 A Home Assistant custom integration for MikroTik RouterOS using the RouterOS REST API.
 
-This integration monitors WiFi clients connected to MikroTik routers and exposes their information as Home Assistant devices and sensors.
+This integration monitors WiFi and Ethernet clients connected to MikroTik routers and exposes their information as Home Assistant devices and sensors.
 
 ## Installation
 
@@ -79,6 +79,7 @@ Each WiFi client is created as a separate Home Assistant device.
 - MAC address
 - IP address (from MikroTik ARP table)
 - Hostname (when available)
+- Ethernet clients are discovered from the bridge host table and include their connected port.
 
 ### Router interfaces
 
@@ -88,9 +89,11 @@ Each interface returned by `/rest/interface` is created as a separate Home Assis
 
 - Uses MikroTik RouterOS REST API.
 - Reads clients from /rest/interface/wifi/registration-table
+- Reads wired clients from /rest/interface/bridge/host
 - Reads interface status and counters from /rest/interface
 - Resolves IP addresses using /rest/ip/arp
 - Automatically creates devices for discovered WiFi clients.
+- Automatically creates devices for discovered Ethernet clients on ether1 through ether5.
 - Keeps known clients when they disconnect.
 - Supports multiple MikroTik routers.
 - Uses Home Assistant aiohttp session.
@@ -104,6 +107,7 @@ Each interface returned by `/rest/interface` is created as a separate Home Assis
 - User permissions:
   - /interface/wifi
   - /interface
+  - /interface/bridge/host
   - /ip/arp
   - /ip/dhcp-server/lease
 
@@ -118,8 +122,6 @@ Each interface returned by `/rest/interface` is created as a separate Home Assis
 
 Planned improvements:
 
-- Ethernet clients support
-- DHCP lease integration
 - Better device naming
 - Vendor lookup by MAC address
 - Network traffic dashboard

@@ -26,6 +26,7 @@ from .const import (
     CONF_VERIFY_SSL,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    ETHERNET_INTERFACE_DEFAULT_NAMES,
     LOGGER_NAME,
 )
 
@@ -84,6 +85,20 @@ class MikroTikInterface:
     tx_packets: int | None = None
     rx_rate: float | None = None
     tx_rate: float | None = None
+
+
+@dataclass
+class MikroTikEthernetClient:
+    mac: str
+    ip: str | None = None
+    hostname: str | None = None
+    interface: str | None = None
+
+    @property
+    def name(self) -> str:
+        if self.hostname and self.hostname.lower() != self.mac.lower():
+            return self.hostname
+        return self.mac
 
 
 def _normalize_mac(raw_mac: str | None) -> str | None:
@@ -279,6 +294,7 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
 
         self.base_url = base_url
         self.interfaces: dict[str, MikroTikInterface] = {}
+        self.ethernet_clients: dict[str, MikroTikEthernetClient] = {}
         self._previous_interface_counters: dict[str, tuple[int, int, float]] = {}
         parsed = urlparse(base_url)
         host = parsed.hostname or parsed.netloc or base_url
@@ -300,16 +316,25 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
             arp_table = await self._client.async_get_arp_table()
             dhcp_leases = await self._client.async_get_dhcp_leases()
             interface_rows = await self._client.async_get_interfaces()
+            bridge_hosts = await self._client.async_get_bridge_hosts()
 
             arp_map = _build_arp_map(arp_table)
             hostname_map = _build_hostname_map(dhcp_leases)
             now = time.monotonic()
             interfaces: dict[str, MikroTikInterface] = {}
             next_counters: dict[str, tuple[int, int, float]] = {}
+            ethernet_interface_names: set[str] = set()
             for row in interface_rows:
-                if row.get("default-name") not in _MONITORED_INTERFACE_DEFAULT_NAMES:
-                    continue
+                default_name = row.get("default-name")
                 name = row.get("name")
+                if (
+                    default_name in ETHERNET_INTERFACE_DEFAULT_NAMES
+                    and isinstance(name, str)
+                    and name
+                ):
+                    ethernet_interface_names.add(name)
+                if default_name not in _MONITORED_INTERFACE_DEFAULT_NAMES:
+                    continue
                 if not isinstance(name, str) or not name:
                     continue
                 rx_bytes = _parse_int(row.get("rx-byte"))
@@ -353,6 +378,47 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
                 client.hostname = hostname_map.get(client.mac)
 
                 clients[client.mac] = client
+
+            ethernet_clients: dict[str, MikroTikEthernetClient] = {}
+            for row in bridge_hosts:
+                if str(row.get("local", "false")).lower() == "true":
+                    continue
+                if str(row.get("dynamic", "true")).lower() != "true":
+                    continue
+                mac = _normalize_mac(
+                    _get_field(row, "mac-address", "mac_address", "mac")
+                )
+                interface_name = _get_field(row, "on-interface", "interface")
+                if (
+                    mac is None
+                    or mac in clients
+                    or interface_name not in ethernet_interface_names
+                ):
+                    continue
+                ethernet_clients[mac] = MikroTikEthernetClient(
+                    mac=mac,
+                    ip=arp_map.get(mac),
+                    hostname=hostname_map.get(mac),
+                    interface=interface_name,
+                )
+            for row in arp_table:
+                mac = _normalize_mac(_get_field(row, "mac-address", "mac_address", "mac"))
+                interface_name = row.get("interface")
+                if (
+                    mac is None
+                    or mac in clients
+                    or mac in ethernet_clients
+                    or interface_name not in ethernet_interface_names
+                    or str(row.get("dynamic", "true")).lower() != "true"
+                ):
+                    continue
+                ethernet_clients[mac] = MikroTikEthernetClient(
+                    mac=mac,
+                    ip=arp_map.get(mac),
+                    hostname=hostname_map.get(mac),
+                    interface=interface_name,
+                )
+            self.ethernet_clients = ethernet_clients
             return clients
         except (
             MikroTikAuthError,

@@ -18,6 +18,15 @@ async def async_get_config_entry_diagnostics(
             CONF_VERIFY_SSL: bool(config_entry.data[CONF_VERIFY_SSL]),
         },
         "clients": [client.raw for client in coordinator.data.values() if client.raw is not None],
+        "ethernet_clients": [
+            {
+                "mac": client.mac,
+                "ip": client.ip,
+                "hostname": client.hostname,
+                "interface": client.interface,
+            }
+            for client in coordinator.ethernet_clients.values()
+        ],
     }
 
 
@@ -28,4 +37,5 @@ async def async_get_device_diagnostics(
     return {
         "device_id": device.id,
         "known_clients": [client.mac for client in coordinator.data.values()],
+        "known_ethernet_clients": list(coordinator.ethernet_clients),
     }

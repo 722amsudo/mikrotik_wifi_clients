@@ -22,6 +22,12 @@ REST_ENDPOINT_REGISTRATION_TABLE = "/rest/interface/wifi/registration-table"
 REST_ENDPOINT_ARP = "/rest/ip/arp"
 REST_ENDPOINT_DHCP_LEASE = "/rest/ip/dhcp-server/lease"
 REST_ENDPOINT_INTERFACES = "/rest/interface"
+REST_ENDPOINT_BRIDGE_HOSTS = "/rest/interface/bridge/host"
+
+ETHERNET_INTERFACE_DEFAULT_NAMES = frozenset(
+    {"ether1", "ether2", "ether3", "ether4", "ether5"}
+)
+CONF_KNOWN_ETHERNET_CLIENTS = "known_ethernet_clients"
 
 SENSOR_DESCRIPTION_MAP: dict[str, dict[str, object]] = {
     "signal": {
@@ -159,6 +165,19 @@ INTERFACE_SENSOR_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
+    ),
+)
+
+ETHERNET_CLIENT_SENSOR_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
+    SensorEntityDescription(
+        key="ip",
+        name="IP Address",
+        icon="mdi:ip",
+    ),
+    SensorEntityDescription(
+        key="interface",
+        name="Interface",
+        icon="mdi:ethernet",
     ),
 )
 
