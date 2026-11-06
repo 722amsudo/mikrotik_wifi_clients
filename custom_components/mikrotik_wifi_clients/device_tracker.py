@@ -106,5 +106,5 @@ class MikroTikEthernetDeviceTracker(CoordinatorEntity, TrackerEntity):
             "name": client.name if client else self._mac,
             "model": "Ethernet Client",
             "connections": {(CONNECTION_NETWORK_MAC, self._mac)},
-            "via_device": (DOMAIN, self.coordinator.base_url),
+            "via_device_id": self.coordinator.router_device_id,
         }

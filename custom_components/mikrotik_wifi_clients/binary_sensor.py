@@ -140,7 +140,7 @@ class MikroTikClientBinarySensor(CoordinatorEntity, BinarySensorEntity):
             "manufacturer": client.manufacturer if client else None,
             "model": "WiFi Client",
             "connections": {(CONNECTION_NETWORK_MAC, self._mac)},
-            "via_device": (DOMAIN, self.coordinator.base_url),
+            "via_device_id": self.coordinator.router_device_id,
         }
 
 
@@ -180,7 +180,7 @@ class MikroTikInterfaceBinarySensor(CoordinatorEntity, BinarySensorEntity):
             "name": self._interface_name,
             "manufacturer": "MikroTik",
             "model": "Router Interface",
-            "via_device": (DOMAIN, self.coordinator.base_url),
+            "via_device_id": self.coordinator.router_device_id,
         }
 
 
@@ -203,7 +203,8 @@ class MikroTikEthernetClientBinarySensor(CoordinatorEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool:
-        return self._client is not None
+        client = self._client
+        return bool(client and client.connected)
 
     @property
     def available(self) -> bool:
@@ -217,5 +218,5 @@ class MikroTikEthernetClientBinarySensor(CoordinatorEntity, BinarySensorEntity):
             "name": client.name if client else self._mac,
             "model": "Ethernet Client",
             "connections": {(CONNECTION_NETWORK_MAC, self._mac)},
-            "via_device": (DOMAIN, self.coordinator.base_url),
+            "via_device_id": self.coordinator.router_device_id,
         }

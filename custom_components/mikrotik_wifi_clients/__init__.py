@@ -54,7 +54,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry.add_update_listener(async_update_options)
     )
 
-    async_get_device_registry(hass).async_get_or_create(
+    router_device = async_get_device_registry(hass).async_get_or_create(
         config_entry_id=entry.entry_id,
         identifiers={(DOMAIN, entry.data[CONF_BASE_URL])},
         manufacturer="MikroTik",
@@ -62,6 +62,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         model="RouterOS",
         configuration_url=entry.data[CONF_BASE_URL],
     )
+    coordinator.router_device_id = router_device.id
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True

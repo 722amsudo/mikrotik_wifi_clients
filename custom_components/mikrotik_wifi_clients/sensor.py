@@ -169,7 +169,7 @@ class MikroTikClientSensor(CoordinatorEntity, SensorEntity):
             "manufacturer": client.manufacturer if client else None,
             "model": "WiFi Client",
             "connections": {(CONNECTION_NETWORK_MAC, self._mac)},
-            "via_device": (DOMAIN, self.coordinator.base_url),
+            "via_device_id": self.coordinator.router_device_id,
         }
 
 
@@ -209,7 +209,7 @@ class MikroTikInterfaceSensor(CoordinatorEntity, SensorEntity):
             "name": self._interface_name,
             "manufacturer": "MikroTik",
             "model": "Router Interface",
-            "via_device": (DOMAIN, self.coordinator.base_url),
+            "via_device_id": self.coordinator.router_device_id,
         }
 
 
@@ -263,5 +263,5 @@ class MikroTikEthernetClientSensor(CoordinatorEntity, SensorEntity):
             "name": client.name if client else self._mac,
             "model": "Ethernet Client",
             "connections": {(CONNECTION_NETWORK_MAC, self._mac)},
-            "via_device": (DOMAIN, self.coordinator.base_url),
+            "via_device_id": self.coordinator.router_device_id,
         }

@@ -328,6 +328,7 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
         _LOGGER.debug("Created coordinator: interval=%s", self.update_interval)
 
         self.base_url = base_url
+        self.router_device_id: str | None = None
         self.interfaces: dict[str, MikroTikInterface] = {}
         self.ethernet_clients: dict[str, MikroTikEthernetClient] = {
             mac: MikroTikEthernetClient(mac=mac)
