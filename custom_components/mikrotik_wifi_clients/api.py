@@ -95,7 +95,7 @@ class MikroTikRestClient:
                     data = await response.json()
         except ClientError as err:
             raise MikroTikConnectionError(str(err)) from err
-        except async_timeout.TimeoutError as err:
+        except TimeoutError as err:
             raise MikroTikConnectionError("Request timed out") from err
         except ContentTypeError as err:
             raise MikroTikResponseError("Unable to parse JSON response") from err
@@ -130,7 +130,7 @@ class MikroTikRestClient:
         except ClientError as err:
             raise MikroTikConnectionError(str(err)) from err
 
-        except async_timeout.TimeoutError as err:
+        except TimeoutError as err:
             raise MikroTikConnectionError("Request timed out") from err
 
         except ContentTypeError as err:
@@ -167,7 +167,7 @@ class MikroTikRestClient:
         except ClientError as err:
             raise MikroTikConnectionError(str(err)) from err
 
-        except async_timeout.TimeoutError as err:
+        except TimeoutError as err:
             raise MikroTikConnectionError("Request timed out") from err
 
         except ContentTypeError as err:
@@ -202,7 +202,7 @@ class MikroTikRestClient:
                     data = await response.json()
         except ClientError as err:
             raise MikroTikConnectionError(str(err)) from err
-        except async_timeout.TimeoutError as err:
+        except TimeoutError as err:
             raise MikroTikConnectionError("Request timed out") from err
         except ContentTypeError as err:
             raise MikroTikResponseError("Unable to parse JSON response") from err
@@ -232,7 +232,7 @@ class MikroTikRestClient:
                     data = await response.json()
         except ClientError as err:
             raise MikroTikConnectionError(str(err)) from err
-        except async_timeout.TimeoutError as err:
+        except TimeoutError as err:
             raise MikroTikConnectionError("Request timed out") from err
         except ContentTypeError as err:
             raise MikroTikResponseError("Unable to parse JSON response") from err
@@ -256,7 +256,7 @@ class MikroTikRestClient:
                 ) as response:
                     if response.status == 401:
                         raise MikroTikAuthError("Invalid authentication")
-                    if response.status in (403, 404):
+                    if response.status in (400, 403, 404):
                         return None
                     if response.status >= 400:
                         raise MikroTikConnectionError(
@@ -265,7 +265,7 @@ class MikroTikRestClient:
                     data = await response.json()
         except ClientError as err:
             raise MikroTikConnectionError(str(err)) from err
-        except async_timeout.TimeoutError as err:
+        except TimeoutError as err:
             raise MikroTikConnectionError("Request timed out") from err
         except ContentTypeError as err:
             raise MikroTikResponseError("Unable to parse JSON response") from err
