@@ -24,6 +24,12 @@ async def async_get_config_entry_diagnostics(
                 "ip": client.ip,
                 "hostname": client.hostname,
                 "interface": client.interface,
+                "connected": client.connected,
+                "last_seen": client.last_seen,
+                "rx_bytes": client.rx_bytes,
+                "tx_bytes": client.tx_bytes,
+                "rx_rate": client.rx_rate,
+                "tx_rate": client.tx_rate,
             }
             for client in coordinator.ethernet_clients.values()
         ],

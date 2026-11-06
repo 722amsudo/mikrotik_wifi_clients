@@ -3,8 +3,8 @@ from __future__ import annotations
 import logging
 import re
 import time
-from dataclasses import dataclass
-from datetime import timedelta
+from dataclasses import dataclass, replace
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from urllib.parse import urlparse
 
@@ -93,6 +93,12 @@ class MikroTikEthernetClient:
     ip: str | None = None
     hostname: str | None = None
     interface: str | None = None
+    connected: bool = False
+    last_seen: str | None = None
+    rx_bytes: int | None = None
+    tx_bytes: int | None = None
+    rx_rate: float | None = None
+    tx_rate: float | None = None
 
     @property
     def name(self) -> str:
@@ -162,6 +168,27 @@ def _build_hostname_map(rows: list[dict[str, Any]]) -> dict[str, str]:
 
     return hostname_map
 
+
+def _build_ip_accounting_map(
+    rows: list[dict[str, Any]],
+) -> dict[str, tuple[int, int]]:
+    """Aggregate bytes by IP: destination bytes are RX, source bytes are TX."""
+    totals: dict[str, list[int]] = {}
+    for row in rows:
+        byte_count = _parse_int(_get_field(row, "bytes", "total-bytes"))
+        if byte_count is None:
+            continue
+
+        source_ip = _get_field(row, "src-address", "src_address")
+        destination_ip = _get_field(row, "dst-address", "dst_address")
+        if source_ip:
+            totals.setdefault(str(source_ip).split("/")[0], [0, 0])[1] += byte_count
+        if destination_ip:
+            totals.setdefault(str(destination_ip).split("/")[0], [0, 0])[0] += byte_count
+
+    return {ip: (values[0], values[1]) for ip, values in totals.items()}
+
+
 def _parse_duration(value: Any) -> int | None:
     if value is None:
         return None
@@ -204,6 +231,13 @@ def _parse_duration(value: Any) -> int | None:
         return parts_int[0] * 3600 + parts_int[1] * 60 + parts_int[2]
 
     return _parse_int(text)
+
+
+def _last_seen_from_row(row: dict[str, Any], observed_at: datetime) -> str:
+    age = _parse_duration(_get_field(row, "age", "last-seen", "last_seen"))
+    if age is not None:
+        observed_at -= timedelta(seconds=age)
+    return observed_at.isoformat()
 
 
 def _get_field(row: dict[str, Any], *keys: str) -> Any:
@@ -283,6 +317,7 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
         use_ssl: bool,
         verify_ssl: bool,
         scan_interval: int = DEFAULT_SCAN_INTERVAL,
+        known_ethernet_clients: set[str] | None = None,
     ) -> None:
         super().__init__(
             hass,
@@ -294,7 +329,11 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
 
         self.base_url = base_url
         self.interfaces: dict[str, MikroTikInterface] = {}
-        self.ethernet_clients: dict[str, MikroTikEthernetClient] = {}
+        self.ethernet_clients: dict[str, MikroTikEthernetClient] = {
+            mac: MikroTikEthernetClient(mac=mac)
+            for mac in (known_ethernet_clients or set())
+        }
+        self._previous_ethernet_counters: dict[str, tuple[int, int, float]] = {}
         self._previous_interface_counters: dict[str, tuple[int, int, float]] = {}
         parsed = urlparse(base_url)
         host = parsed.hostname or parsed.netloc or base_url
@@ -317,10 +356,17 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
             dhcp_leases = await self._client.async_get_dhcp_leases()
             interface_rows = await self._client.async_get_interfaces()
             bridge_hosts = await self._client.async_get_bridge_hosts()
+            accounting_rows = await self._client.async_get_ip_accounting()
 
             arp_map = _build_arp_map(arp_table)
             hostname_map = _build_hostname_map(dhcp_leases)
+            accounting_map = (
+                _build_ip_accounting_map(accounting_rows)
+                if accounting_rows is not None
+                else {}
+            )
             now = time.monotonic()
+            observed_at = datetime.now(timezone.utc)
             interfaces: dict[str, MikroTikInterface] = {}
             next_counters: dict[str, tuple[int, int, float]] = {}
             ethernet_interface_names: set[str] = set()
@@ -380,6 +426,7 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
                 clients[client.mac] = client
 
             ethernet_clients: dict[str, MikroTikEthernetClient] = {}
+            next_ethernet_counters: dict[str, tuple[int, int, float]] = {}
             for row in bridge_hosts:
                 if str(row.get("local", "false")).lower() == "true":
                     continue
@@ -395,11 +442,38 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
                     or interface_name not in ethernet_interface_names
                 ):
                     continue
+                ip = arp_map.get(mac)
+                counters = (
+                    accounting_map.get(ip, (0, 0))
+                    if ip and accounting_rows is not None
+                    else None
+                )
+                rx_bytes, tx_bytes = counters if counters is not None else (None, None)
+                previous = self._previous_ethernet_counters.get(mac)
+                rx_rate = tx_rate = None
+                if previous is not None and counters is not None:
+                    previous_rx, previous_tx, previous_time = previous
+                    elapsed = now - previous_time
+                    if (
+                        elapsed > 0
+                        and rx_bytes >= previous_rx
+                        and tx_bytes >= previous_tx
+                    ):
+                        rx_rate = (rx_bytes - previous_rx) * 8 / elapsed / 1_000_000
+                        tx_rate = (tx_bytes - previous_tx) * 8 / elapsed / 1_000_000
+                if counters is not None and rx_bytes is not None and tx_bytes is not None:
+                    next_ethernet_counters[mac] = (rx_bytes, tx_bytes, now)
                 ethernet_clients[mac] = MikroTikEthernetClient(
                     mac=mac,
-                    ip=arp_map.get(mac),
+                    ip=ip,
                     hostname=hostname_map.get(mac),
                     interface=interface_name,
+                    connected=True,
+                    last_seen=_last_seen_from_row(row, observed_at),
+                    rx_bytes=rx_bytes,
+                    tx_bytes=tx_bytes,
+                    rx_rate=rx_rate,
+                    tx_rate=tx_rate,
                 )
             for row in arp_table:
                 mac = _normalize_mac(_get_field(row, "mac-address", "mac_address", "mac"))
@@ -417,7 +491,18 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
                     ip=arp_map.get(mac),
                     hostname=hostname_map.get(mac),
                     interface=interface_name,
+                    connected=True,
+                    last_seen=_last_seen_from_row(row, observed_at),
                 )
+            for mac, previous_client in self.ethernet_clients.items():
+                if mac not in ethernet_clients:
+                    ethernet_clients[mac] = replace(
+                        previous_client,
+                        connected=False,
+                        rx_rate=0.0 if previous_client.rx_bytes is not None else None,
+                        tx_rate=0.0 if previous_client.tx_bytes is not None else None,
+                    )
+            self._previous_ethernet_counters = next_ethernet_counters
             self.ethernet_clients = ethernet_clients
             return clients
         except (

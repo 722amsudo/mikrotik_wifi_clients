@@ -236,11 +236,24 @@ class MikroTikEthernetClientSensor(CoordinatorEntity, SensorEntity):
         return bool(self._client and self.coordinator.last_update_success)
 
     @property
-    def native_value(self) -> str | None:
+    def native_value(self) -> int | float | str | None:
         client = self._client
         if client is None:
             return None
         return getattr(client, self.entity_description.key)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str | None]:
+        client = self._client
+        if client is None:
+            return {}
+        return {
+            "ip_address": client.ip,
+            "mac_address": client.mac,
+            "host_name": client.hostname,
+            "interface": client.interface,
+            "last_seen": client.last_seen,
+        }
 
     @property
     def device_info(self) -> DeviceInfo:

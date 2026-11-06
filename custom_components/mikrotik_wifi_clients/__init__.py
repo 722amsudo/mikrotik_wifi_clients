@@ -15,6 +15,7 @@ from .const import (
     CONF_USE_SSL,
     CONF_USERNAME,
     CONF_VERIFY_SSL,
+    CONF_KNOWN_ETHERNET_CLIENTS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     LOGGER_NAME,
@@ -38,6 +39,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         bool(entry.data.get(CONF_USE_SSL, True)),
         bool(entry.data.get(CONF_VERIFY_SSL, True)),
         scan_interval,
+        set(entry.data.get(CONF_KNOWN_ETHERNET_CLIENTS, [])),
     )
 
     try:
