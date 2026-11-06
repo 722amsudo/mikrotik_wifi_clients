@@ -13,7 +13,7 @@ from homeassistant.const import (
 
 DOMAIN = "mikrotik_wifi_clients"
 LOGGER_NAME = "mikrotik_wifi_clients"
-PLATFORMS = ["sensor", "binary_sensor", "device_tracker"]
+PLATFORMS = ["sensor", "binary_sensor"]
 
 CONF_BASE_URL = "base_url"
 CONF_USE_SSL = "use_ssl"
@@ -22,14 +22,6 @@ REST_ENDPOINT_REGISTRATION_TABLE = "/rest/interface/wifi/registration-table"
 REST_ENDPOINT_ARP = "/rest/ip/arp"
 REST_ENDPOINT_DHCP_LEASE = "/rest/ip/dhcp-server/lease"
 REST_ENDPOINT_INTERFACES = "/rest/interface"
-REST_ENDPOINT_BRIDGE_HOSTS = "/rest/interface/bridge/host"
-REST_ENDPOINT_IP_ACCOUNTING = "/rest/ip/accounting"
-
-ETHERNET_INTERFACE_DEFAULT_NAMES = frozenset(
-    {"ether1", "ether2", "ether3", "ether4", "ether5"}
-)
-CONF_KNOWN_ETHERNET_CLIENTS = "known_ethernet_clients"
-
 SENSOR_DESCRIPTION_MAP: dict[str, dict[str, object]] = {
     "signal": {
         "name": "Signal",
@@ -166,49 +158,6 @@ INTERFACE_SENSOR_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
-    ),
-)
-
-ETHERNET_CLIENT_SENSOR_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
-    SensorEntityDescription(
-        key="rx_rate",
-        name="RX Rate",
-        icon="mdi:download-network",
-        native_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-    ),
-    SensorEntityDescription(
-        key="tx_rate",
-        name="TX Rate",
-        icon="mdi:upload-network",
-        native_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-    ),
-    SensorEntityDescription(
-        key="rx_bytes",
-        name="RX Bytes",
-        icon="mdi:download",
-        native_unit_of_measurement=UnitOfInformation.BYTES,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-    ),
-    SensorEntityDescription(
-        key="tx_bytes",
-        name="TX Bytes",
-        icon="mdi:upload",
-        native_unit_of_measurement=UnitOfInformation.BYTES,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-    ),
-    SensorEntityDescription(
-        key="ip",
-        name="IP Address",
-        icon="mdi:ip",
-    ),
-    SensorEntityDescription(
-        key="interface",
-        name="Interface",
-        icon="mdi:ethernet",
     ),
 )
 

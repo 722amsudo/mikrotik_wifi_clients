@@ -79,24 +79,18 @@ Each WiFi client is created as a separate Home Assistant device.
 - MAC address
 - IP address (from MikroTik ARP table)
 - Hostname (when available)
-- Ethernet clients are discovered from the bridge host table and include their connected port.
-- Ethernet client device trackers report `home` while present in the dynamic bridge/ARP tables and retain the last-seen timestamp.
-- Ethernet clients expose per-IP RX/TX byte totals and rates when RouterOS IP accounting is enabled.
 
 ### Router interfaces
 
-Each interface returned by `/rest/interface` is created as a separate Home Assistant device linked to the router. Interface entities include link status, RX/TX byte and packet counters, and RX/TX rates calculated from counter changes between polls.
+The `ether1`–`ether5` and `wifi1`–`wifi2` interfaces are created as separate Home Assistant devices linked to the router. Interface entities include link status, RX/TX byte and packet counters, and RX/TX rates calculated from counter changes between polls.
 
 ## Features
 
 - Uses MikroTik RouterOS REST API.
 - Reads clients from /rest/interface/wifi/registration-table
-- Reads wired clients from /rest/interface/bridge/host
-- Reads per-IP traffic totals from /rest/ip/accounting when RouterOS IP accounting is enabled
 - Reads interface status and counters from /rest/interface
 - Resolves IP addresses using /rest/ip/arp
 - Automatically creates devices for discovered WiFi clients.
-- Automatically creates devices for discovered Ethernet clients on ether1 through ether5.
 - Keeps known clients when they disconnect.
 - Supports multiple MikroTik routers.
 - Uses Home Assistant aiohttp session.
@@ -110,8 +104,6 @@ Each interface returned by `/rest/interface` is created as a separate Home Assis
 - User permissions:
   - /interface/wifi
   - /interface
-  - /interface/bridge/host
-  - /ip/accounting
   - /ip/arp
   - /ip/dhcp-server/lease
 
@@ -120,7 +112,6 @@ Each interface returned by `/rest/interface` is created as a separate Home Assis
 - Client hostnames depend on information provided by the device.
 - Some devices do not send hostname information. In this case MAC address is used.
 - IP address detection depends on ARP table availability.
-- Per-client Ethernet traffic sensors require RouterOS IP accounting to be enabled; rates are calculated from accounting counter changes between polls.
 - Updates are performed periodically.
 
 ## Roadmap
