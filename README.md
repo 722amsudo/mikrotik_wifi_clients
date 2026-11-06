@@ -84,6 +84,8 @@ Each WiFi client is created as a separate Home Assistant device.
 
 The `ether1`–`ether5` and `wifi1`–`wifi2` interfaces are created as separate Home Assistant devices linked to the router. Interface entities include link status, RX/TX byte and packet counters, and RX/TX rates calculated from counter changes between polls.
 
+The router device also exposes a `Scan Interval` sensor showing the active coordinator polling interval in seconds.
+
 ## Features
 
 - Uses MikroTik RouterOS REST API.

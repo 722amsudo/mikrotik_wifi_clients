@@ -9,6 +9,7 @@ from homeassistant.const import (
     CONF_VERIFY_SSL,
     UnitOfDataRate,
     UnitOfInformation,
+    UnitOfTime,
 )
 
 DOMAIN = "mikrotik_wifi_clients"
@@ -159,6 +160,13 @@ INTERFACE_SENSOR_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
+)
+
+SCAN_INTERVAL_SENSOR_DESCRIPTION = SensorEntityDescription(
+    key="scan_interval",
+    name="Scan Interval",
+    icon="mdi:timer-sync",
+    native_unit_of_measurement=UnitOfTime.SECONDS,
 )
 
 BINARY_SENSOR_DESCRIPTIONS = (

@@ -11,6 +11,7 @@ from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
 from .const import (
     DOMAIN,
     INTERFACE_SENSOR_DESCRIPTIONS,
+    SCAN_INTERVAL_SENSOR_DESCRIPTION,
     SENSOR_DESCRIPTIONS,
 )
 from .coordinator import MikroTikClient, MikroTikCoordinator, MikroTikInterface
@@ -22,6 +23,10 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = hass.data[DOMAIN][entry.entry_id]
+    async_add_entities(
+        [MikroTikScanIntervalSensor(coordinator, entry.entry_id)]
+    )
+
     known_macs = set(entry.data.get("known_clients", [])) | set(coordinator.data)
     existing_macs: set[str] = set()
 
@@ -168,4 +173,27 @@ class MikroTikInterfaceSensor(CoordinatorEntity, SensorEntity):
             "manufacturer": "MikroTik",
             "model": "Router Interface",
             "via_device_id": self.coordinator.router_device_id,
+        }
+
+
+class MikroTikScanIntervalSensor(SensorEntity):
+    entity_description = SCAN_INTERVAL_SENSOR_DESCRIPTION
+
+    def __init__(
+        self,
+        coordinator: MikroTikCoordinator,
+        entry_id: str,
+    ) -> None:
+        self.coordinator = coordinator
+        self._attr_unique_id = f"{entry_id}_scan_interval"
+        self._attr_has_entity_name = True
+
+    @property
+    def native_value(self) -> int:
+        return int(self.coordinator.update_interval.total_seconds())
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return {
+            "identifiers": {(DOMAIN, self.coordinator.base_url)},
         }
