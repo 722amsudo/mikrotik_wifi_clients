@@ -287,7 +287,9 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
         self.base_url = base_url
         self.router_device_id: str | None = None
         self.interfaces: dict[str, MikroTikInterface] = {}
-        self._previous_interface_counters: dict[str, tuple[int, int, float]] = {}
+        self._previous_interface_counters: dict[
+            str, tuple[int, int, float, bool]
+        ] = {}
         parsed = urlparse(base_url)
         host = parsed.hostname or parsed.netloc or base_url
         port = parsed.port
@@ -312,8 +314,9 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
             arp_map = _build_arp_map(arp_table)
             hostname_map = _build_hostname_map(dhcp_leases)
             now = time.monotonic()
+            minimum_rate_interval = self.update_interval.total_seconds() * 0.8
             interfaces: dict[str, MikroTikInterface] = {}
-            next_counters: dict[str, tuple[int, int, float]] = {}
+            next_counters: dict[str, tuple[int, int, float, bool]] = {}
             for row in interface_rows:
                 default_name = row.get("default-name")
                 name = row.get("name")
@@ -326,18 +329,29 @@ class MikroTikCoordinator(DataUpdateCoordinator[dict[str, MikroTikClient]]):
                 running = str(row.get("running", "false")).lower() == "true"
                 rx_rate = tx_rate = None
                 previous = self._previous_interface_counters.get(name)
-                if (
-                    previous is not None
-                    and rx_bytes is not None
-                    and tx_bytes is not None
-                ):
-                    previous_rx, previous_tx, previous_time = previous
-                    elapsed = now - previous_time
-                    if elapsed > 0 and rx_bytes >= previous_rx and tx_bytes >= previous_tx:
-                        rx_rate = (rx_bytes - previous_rx) * 8 / elapsed / 1_000_000
-                        tx_rate = (tx_bytes - previous_tx) * 8 / elapsed / 1_000_000
+                counter_sample = None
                 if rx_bytes is not None and tx_bytes is not None:
-                    next_counters[name] = (rx_bytes, tx_bytes, now)
+                    counter_sample = (rx_bytes, tx_bytes, now, running)
+                if previous is not None and counter_sample is not None:
+                    sample_rx, sample_tx, sample_time, sample_running = counter_sample
+                    previous_rx, previous_tx, previous_time, previous_running = previous
+                    elapsed = sample_time - previous_time
+                    counters_reset = (
+                        sample_rx < previous_rx or sample_tx < previous_tx
+                    )
+                    link_state_changed = sample_running != previous_running
+                    if counters_reset or link_state_changed:
+                        next_counters[name] = counter_sample
+                    elif elapsed >= minimum_rate_interval:
+                        rx_rate = (sample_rx - previous_rx) * 8 / elapsed / 1_000_000
+                        tx_rate = (sample_tx - previous_tx) * 8 / elapsed / 1_000_000
+                        next_counters[name] = counter_sample
+                    else:
+                        # Keep the older baseline so short-interval deltas are
+                        # included in the next valid rate sample.
+                        next_counters[name] = previous
+                elif counter_sample is not None:
+                    next_counters[name] = counter_sample
                 interfaces[name] = MikroTikInterface(
                     name=name,
                     running=running,
