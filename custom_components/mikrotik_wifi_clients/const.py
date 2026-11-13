@@ -69,6 +69,12 @@ SENSOR_DESCRIPTION_MAP: dict[str, dict[str, object]] = {
         "native_unit_of_measurement": UnitOfInformation.BYTES,
         "state_class": SensorStateClass.TOTAL_INCREASING,
     },
+    "total_bytes": {
+        "name": "Total Bytes",
+        "icon": "mdi:swap-vertical",
+        "native_unit_of_measurement": UnitOfInformation.BYTES,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+    },
     "tx_packets": {
         "name": "TX Packets",
         "icon": "mdi:swap-vertical",

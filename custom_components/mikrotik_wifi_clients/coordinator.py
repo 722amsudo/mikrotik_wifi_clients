@@ -73,6 +73,12 @@ class MikroTikClient:
             return self.hostname
         return self.mac
 
+    @property
+    def total_bytes(self) -> int | None:
+        if self.rx_bytes is None or self.tx_bytes is None:
+            return None
+        return self.rx_bytes + self.tx_bytes
+
 
 @dataclass
 class MikroTikInterface:

@@ -71,6 +71,7 @@ Each WiFi client is created as a separate Home Assistant device.
 - RX throughput
 - TX bytes
 - RX bytes
+- Total bytes (TX + RX)
 - TX packets
 - RX packets
 
